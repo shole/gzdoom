@@ -19,6 +19,7 @@ public:
 		int WindowPositionParity; // top-of-window might not be top-of-screen
 		FVector2 Scale;
 		float ColorScale;
+		float LGpitch, LGslope, LGcenter;
 		float Padding1, Padding2, Padding3;
 
 		static std::vector<UniformFieldDesc> Desc()
@@ -33,6 +34,9 @@ public:
 				{ "WindowPositionParity", UniformType::Int, offsetof(UniformBlock, WindowPositionParity) },
 				{ "UVScale", UniformType::Vec2, offsetof(UniformBlock, Scale) },
 				{ "ColorScale", UniformType::Float, offsetof(UniformBlock, ColorScale) },
+				{ "LGpitch", UniformType::Float, offsetof(UniformBlock, LGpitch) },
+				{ "LGslope", UniformType::Float, offsetof(UniformBlock, LGslope) },
+				{ "LGcenter", UniformType::Float, offsetof(UniformBlock, LGcenter) },
 			};
 		}
 	};

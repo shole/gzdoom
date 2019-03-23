@@ -96,6 +96,7 @@ void FGLRenderer::Initialize(int width, int height)
 	mPresent3dCheckerShader = new FPresent3DCheckerShader();
 	mPresent3dColumnShader = new FPresent3DColumnShader();
 	mPresent3dRowShader = new FPresent3DRowShader();
+	mPresent3dLookingGlassShader = new FPresent3DLookingGlassShader();
 	mShadowMapShader = new FShadowMapShader();
 	mCustomPostProcessShaders = new FCustomPostProcessShaders();
 
@@ -134,6 +135,7 @@ FGLRenderer::~FGLRenderer()
 	if (mPresent3dCheckerShader) delete mPresent3dCheckerShader;
 	if (mPresent3dColumnShader) delete mPresent3dColumnShader;
 	if (mPresent3dRowShader) delete mPresent3dRowShader;
+	if (mPresent3dLookingGlassShader) delete mPresent3dLookingGlassShader;
 	if (mShadowMapShader) delete mShadowMapShader;
 	delete mCustomPostProcessShaders;
 }

@@ -42,6 +42,10 @@ EXTERN_CVAR(Float, vid_contrast)
 EXTERN_CVAR(Int, gl_satformula)
 EXTERN_CVAR(Int, gl_dither_bpc)
 
+CVAR(Float, vr_lookingglass_pitch, 47.58f, CVAR_ARCHIVE | CVAR_GLOBALCONFIG)
+CVAR(Float, vr_lookingglass_slope, -5.4f, CVAR_ARCHIVE | CVAR_GLOBALCONFIG)
+CVAR(Float, vr_lookingglass_center, -0.16f, CVAR_ARCHIVE | CVAR_GLOBALCONFIG)
+
 namespace OpenGLRenderer
 {
 
@@ -129,6 +133,46 @@ void FGLRenderer::PresentTopBottom()
 //
 //==========================================================================
 
+void FGLRenderer::DrawPresentShader(const IntRect &box, FPresentShaderBase& shader, bool applyGamma )
+{
+	glViewport(box.left, box.top, box.width, box.height);
+
+	mBuffers->BindDitherTexture(1);
+
+	glActiveTexture(GL_TEXTURE0);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+	shader.Bind(NOQUEUE);
+	if (!applyGamma || framebuffer->IsHWGammaActive())
+	{
+		shader.Uniforms->InvGamma = 1.0f;
+		shader.Uniforms->Contrast = 1.0f;
+		shader.Uniforms->Brightness = 0.0f;
+		shader.Uniforms->Saturation = 1.0f;
+	}
+	else
+	{
+		shader.Uniforms->InvGamma = 1.0f / clamp<float>(Gamma, 0.1f, 4.f);
+		shader.Uniforms->Contrast = clamp<float>(vid_contrast, 0.1f, 3.f);
+		shader.Uniforms->Brightness = clamp<float>(vid_brightness, -0.8f, 0.8f);
+		shader.Uniforms->Saturation = clamp<float>(vid_saturation, -15.0f, 15.f);
+		shader.Uniforms->GrayFormula = static_cast<int>(gl_satformula);
+	}
+	shader.Uniforms->ColorScale = (gl_dither_bpc == -1) ? 255.0f : (float)((1 << gl_dither_bpc) - 1);
+	shader.Uniforms->Scale = {
+		screen->mScreenViewport.width / (float)mBuffers->GetWidth(),
+		screen->mScreenViewport.height / (float)mBuffers->GetHeight()
+	};
+	shader.Uniforms.Set();
+	RenderScreenQuad();
+}
+//==========================================================================
+//
+//
+//
+//==========================================================================
+
 void FGLRenderer::prepareInterleavedPresent(FPresentShaderBase& shader)
 {
 	mBuffers->BindOutputFB();
@@ -195,7 +239,7 @@ void FGLRenderer::PresentColumnInterleaved()
 	//auto windowHOffset = clientoffset.X % 2;
 	int windowHOffset = 0;
 
-	mPresent3dColumnShader->Uniforms->WindowPositionParity = windowHOffset;
+	mPresent3dColumnShader->Uniforms->WindowPositionParity = windowHOffset; 
 	mPresent3dColumnShader->Uniforms.Set();
 
 	RenderScreenQuad();
@@ -321,6 +365,87 @@ void FGLRenderer::PresentQuadStereo()
 	}
 }
 
+//==========================================================================
+//
+// subpixel masked lookingglass lightfield
+//
+//==========================================================================
+
+void FGLRenderer::PresentLG()
+{
+	mBuffers->BindOutputFB();
+	ClearBorders();
+	
+	// we need total of 45 eyes for lookingglass to view
+	int eyes = 45;
+
+	IntRect screencrop = screen->mOutputLetterbox;
+	for (int i = 0; i < eyes; i++)
+	{
+		if (i == 1)
+		{ // use first eye to clear screen and then set to additive
+			glEnable(GL_BLEND);
+			glBlendEquation(GL_FUNC_ADD);
+			glBlendFunc(GL_ONE, GL_ONE);
+		}
+
+		mBuffers->BindEyeTexture(i, 0);
+		mPresent3dLookingGlassShader->Uniforms->WindowPositionParity = i;
+		mPresent3dLookingGlassShader->Uniforms->LGpitch = vr_lookingglass_pitch; //47.584781646728516f; // pitch
+		mPresent3dLookingGlassShader->Uniforms->LGslope = vr_lookingglass_slope; //-5.4085869789123535; // slope
+		mPresent3dLookingGlassShader->Uniforms->LGcenter = vr_lookingglass_center; //-0.156521737575531; // center
+		//mPresent3dColumnShader->Uniforms.Set(false); // let DrawPresentShader deal with this
+		DrawPresentShader(screencrop, *mPresent3dLookingGlassShader, true); // render eye - subpixels are rendered on top of previous frame additively
+
+	}
+	glDisable(GL_BLEND);
+}
+//==========================================================================
+//
+// 9x5 looking glass quilt lightfield
+//
+//==========================================================================
+
+void FGLRenderer::PresentSideBySideGrid()
+{
+	mBuffers->BindOutputFB();
+	ClearBorders();
+
+	// we need total of 45 eyes for lookingglass to view
+	int eyes = 45;
+
+	// grid size
+	int eyesH = 9;
+	int eyesV = 5;
+
+	// Compute screen regions to use for eye views
+	int width = screen->mOutputLetterbox.width / eyesH;
+	int height = screen->mOutputLetterbox.height / eyesV;
+	IntRect screencrop = screen->mOutputLetterbox;
+	for (int i = 0; i < eyes; i++)
+	{
+
+		int eyeX = i % eyesH;
+		int eyeY = i / eyesH;
+
+		screencrop.width = width;
+		screencrop.height = height;
+		screencrop.left = width * eyeX;
+		screencrop.top = height * eyeY;
+
+		mBuffers->BindEyeTexture(i, 0);
+		DrawPresentTexture(screencrop, true);
+	}
+
+	// postprocessing quilt->native postprocessing shader goes here ?
+
+}
+
+//==========================================================================
+//
+//
+//
+//==========================================================================
 
 void FGLRenderer::PresentStereo()
 {
@@ -365,6 +490,12 @@ void FGLRenderer::PresentStereo()
 	case VR_QUADSTEREO:
 		PresentQuadStereo();
 		break;
+
+	case VR_LOOKINGGLASS:
+		//PresentSideBySideGrid();
+		PresentLG();
+		break;
+
 	}
 }
 

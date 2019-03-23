@@ -56,6 +56,13 @@ static VRMode vrmi_lefteye = { 1, 1.f, 1.f, 1.f, { { -.5f, 1.f },{ 0.f, 0.f } } 
 static VRMode vrmi_righteye = { 1, 1.f, 1.f, 1.f,{ { .5f, 1.f },{ 0.f, 0.f } } };
 static VRMode vrmi_topbottom = { 2, 1.f, .5f, 1.f,{ { -.5f, 1.f },{ .5f, 1.f } } };
 static VRMode vrmi_checker = { 2, isqrt2, isqrt2, 1.f,{ { -.5f, 1.f },{ .5f, 1.f } } };
+static VRMode vrmi_sbslookingglass = { 45, .3f, .3f, 1.f,{
+	{ -6.16f, 1.f }, { -5.88f, 1.f }, { -5.6f,	1.f }, { -5.32f, 1.f }, { -5.04f, 1.f }, { -4.76f, 1.f }, { -4.48f, 1.f }, {  -4.2f, 1.f }, { -3.92f, 1.f },
+	{ -3.64f, 1.f }, { -3.36f, 1.f }, { -3.08f,	1.f }, {  -2.8f, 1.f }, { -2.52f, 1.f }, { -2.24f, 1.f }, { -1.96f, 1.f }, { -1.68f, 1.f }, {  -1.4f, 1.f },
+	{ -1.12f, 1.f }, { -0.84f, 1.f }, { -0.56f,	1.f }, { -0.28f, 1.f }, {    0.f, 1.f }, {  0.28f, 1.f }, {  0.56f, 1.f }, {  0.84f, 1.f }, {  1.12f, 1.f },
+	{   1.4f, 1.f }, {  1.68f, 1.f }, { 1.96f,	1.f }, {  2.24f, 1.f }, {  2.52f, 1.f }, {   2.8f, 1.f }, {  3.08f, 1.f }, {  3.36f, 1.f }, {  3.64f, 1.f },
+	{  3.92f, 1.f }, {   4.2f, 1.f }, { 4.48f,	1.f }, {  4.76f, 1.f }, {  5.04f, 1.f }, {  5.32f, 1.f }, {   5.6f, 1.f }, {  5.88f, 1.f }, {  6.16f, 1.f },
+} };
 
 const VRMode *VRMode::GetVRMode(bool toscreen)
 {
@@ -90,6 +97,9 @@ const VRMode *VRMode::GetVRMode(bool toscreen)
 
 	case VR_CHECKERINTERLEAVED:
 		return &vrmi_checker;
+
+	case VR_LOOKINGGLASS:
+		return &vrmi_sbslookingglass;
 	}
 }
 
@@ -143,6 +153,10 @@ VSMatrix VREyeInfo::GetProjection(float fov, float aspectRatio, float fovRatio) 
 		// A: No. (lab) roll is not measured on desktop display (yet)
 		double frustumShift = zNear * getShift() / vr_screendist; // meters cancel, leaving doom units
 																  // double frustumShift = 0; // Turning off shift for debugging
+		
+		if (vr_mode==VR_LOOKINGGLASS) {
+			frustumShift /= 5.625; // adjust screendist default to looking glass optimal range
+		}
 		double fH = zNear * tan(DEG2RAD(fov) / 2) / fovRatio;
 		double fW = fH * aspectRatio * mScaleFactor;
 		double left = -fW - frustumShift;

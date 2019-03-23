@@ -31,6 +31,11 @@
 #include "hw_shaderprogram.h"
 #include "hw_presentshader.h"
 
+class FPresent3DLookingGlassShader : public FPresentShaderBase
+{
+public:
+	void Bind(IRenderQueue *q) override;
+};
 class FPresent3DCheckerShader : public FPresentShaderBase
 {
 public:

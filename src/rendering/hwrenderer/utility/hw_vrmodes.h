@@ -18,7 +18,8 @@ enum
 	VR_TOPBOTTOM = 11,
 	VR_ROWINTERLEAVED = 12,
 	VR_COLUMNINTERLEAVED = 13,
-	VR_CHECKERINTERLEAVED = 14
+	VR_CHECKERINTERLEAVED = 14,
+	VR_LOOKINGGLASS = 15
 };
 
 struct VREyeInfo
@@ -39,7 +40,7 @@ struct VRMode
 	float mHorizontalViewportScale;
 	float mVerticalViewportScale;
 	float mWeaponProjectionScale;
-	VREyeInfo mEyes[2];
+	VREyeInfo mEyes[];
 
 	static const VRMode *GetVRMode(bool toscreen = true);
 	void AdjustViewport(DFrameBuffer *fb) const;

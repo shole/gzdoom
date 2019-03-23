@@ -28,6 +28,7 @@ class FPresentShader;
 class FPresent3DCheckerShader;
 class FPresent3DColumnShader; 
 class FPresent3DRowShader;
+class FPresent3DLookingGlassShader;
 class FGL2DDrawer;
 class FHardwareTexture;
 class FShadowMapShader;
@@ -67,6 +68,7 @@ public:
 	FPresent3DCheckerShader *mPresent3dCheckerShader = nullptr;
 	FPresent3DColumnShader *mPresent3dColumnShader = nullptr;
 	FPresent3DRowShader *mPresent3dRowShader = nullptr;
+	FPresent3DLookingGlassShader *mPresent3dLookingGlassShader = nullptr;
 	FShadowMapShader *mShadowMapShader = nullptr;
 	FCustomPostProcessShaders *mCustomPostProcessShaders = nullptr;
 
@@ -119,6 +121,9 @@ private:
 	void PresentRowInterleaved();
 	void PresentCheckerInterleaved();
 	void PresentQuadStereo();
+	void PresentLG();
+	void PresentSideBySideGrid();
+	void DrawPresentShader(const IntRect &box, FPresentShaderBase& shader, bool applyGamma);
 
 };
 

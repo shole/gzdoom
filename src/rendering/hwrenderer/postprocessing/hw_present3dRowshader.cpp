@@ -55,3 +55,11 @@ void FPresent3DRowShader::Bind(IRenderQueue *q)
 	}
 	mShader->Bind(q);
 }
+void FPresent3DLookingGlassShader::Bind(IRenderQueue *q)
+{
+	if (!mShader)
+	{
+		Init("shaders/glsl/present_lookingglass3d.fp", "shaders/glsl/presentLookingGlass3d");
+	}
+	mShader->Bind(q);
+}
